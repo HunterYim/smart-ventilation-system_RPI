@@ -2,7 +2,7 @@ import Adafruit_DHT
 import time
 
 sensor = Adafruit_DHT.DHT11
-gpio_pin = 4  # EXT_GP100 = GPIO4
+gpio_pin = 17
 
 def read_dht11():
     humidity, temperature = Adafruit_DHT.read_retry(sensor, gpio_pin)
