@@ -2,7 +2,7 @@ import Adafruit_DHT
 import time
 
 sensor = Adafruit_DHT.DHT11
-gpio_pin = 17
+gpio_pin = 24   #EXT_GPIO0 = GPIO24
 
 def read_dht11():
     humidity, temperature = Adafruit_DHT.read_retry(sensor, gpio_pin)
@@ -18,4 +18,4 @@ if __name__ == "__main__":
             print(f"🌡 temperature: {temp:.1f}°C  💧 humidity: {humi:.1f}%")
             time.sleep(2)
     except KeyboardInterrupt:
-        print("finish.")
+        print("finish")
