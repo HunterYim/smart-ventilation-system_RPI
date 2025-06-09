@@ -8,7 +8,7 @@
 #define GPIO_CHIP "/dev/gpiochip0"
 #define GPIO_LINE 24   // BCM GPIO24
 #define MAX_TIMINGS 85
-#define TIMEOUT_US 100
+#define TIMEOUT_US 150
 
 int data[5] = {0, 0, 0, 0, 0};
 
@@ -67,7 +67,7 @@ int read_dht11(int *temperature, int *humidity) {
 
         if ((i >= 4) && (i % 2 == 0)) {
             data[j / 8] <<= 1;
-            if (counter > 40)
+            if (counter > 30)  // 민감도 완화
                 data[j / 8] |= 1;
             j++;
         }
@@ -81,6 +81,7 @@ int read_dht11(int *temperature, int *humidity) {
         *temperature = data[2];
         return 1;
     } else {
+        printf("❌ Failed. Read bits: %d\n", j);
         return 0;
     }
 }
@@ -92,7 +93,7 @@ int main() {
         if (read_dht11(&temp, &humi)) {
             printf("temperature: %d°C   humidity: %d%%\n", temp, humi);
         } else {
-            printf("❌ Failed. Retry...\n");
+            printf("Retrying...\n");
         }
         sleep(2);
     }
