@@ -37,9 +37,9 @@ int main(void) {
         // so check the downloaded DHTXXD.h file.
         // Common form: status = DHTXXD(gpio_pin, dht_type_or_auto, &dht_data_struct);
         // Or status = DHT(gpio_pin, &dht_data_struct); // Older example
-        status = DHTXXD(DHT_SENSOR_PIN, DHT_SENSOR_TYPE, &dht_data);
+        status = DHTXXD(0,DHT_SENSOR_PIN, DHT_SENSOR_TYPE,&dht_data);
 
-        if (status == PI_DHT_GOOD) {
+        if (status == DHT_GOOD) {
             // Data read successfully
             printf("------------------------------------\n");
             printf("Temperature: %.1f °C\n", dht_data.temperature);
@@ -54,10 +54,10 @@ int main(void) {
             // Failed to read data
             fprintf(stderr, "Failed to read DHT sensor. ");
             switch (status) {
-                case PI_DHT_BAD_DATA:
+                case DHT_BAD_DATA:
                     fprintf(stderr, "Data error (checksum mismatch, etc.)\n");
                     break;
-                case PI_DHT_TIMEOUT:
+                case DHT_TIMEOUT:
                     fprintf(stderr, "Timeout occurred\n");
                     break;
                 case PI_INIT_FAILED: // This case might not be directly returned by DHTXXD, but good to be aware of
@@ -74,7 +74,7 @@ int main(void) {
         }
     }
 
-    if (status != PI_DHT_GOOD) {
+    if (status != DHT_GOOD) {
         fprintf(stderr, "Ultimately failed to read DHT sensor data.\n");
         fprintf(stderr, "  - Check BCM GPIO %d pin connection.\n", DHT_SENSOR_PIN);
         fprintf(stderr, "  - Check DHT11 sensor power and GND connection.\n");
@@ -85,5 +85,5 @@ int main(void) {
     // 3. Terminate pigpio library
     gpioTerminate();
 
-    return (status == PI_DHT_GOOD) ? 0 : 1;
+    return (status == DHT_GOOD) ? 0 : 1;
 }

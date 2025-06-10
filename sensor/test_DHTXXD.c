@@ -63,7 +63,7 @@ void usage()
       "   Read a DHT connected to GPIO 11 every 5 seconds.\n\n");
 }
 
-int optGPIO     = 4;
+int optGPIO     = 24;
 char *optHost   = NULL;
 char *optPort   = NULL;
 int optModel    = DHTAUTO;

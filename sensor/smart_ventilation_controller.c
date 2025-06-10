@@ -23,9 +23,9 @@
 #endif
 
 // Fan operation conditions
-#define TEMPERATURE_THRESHOLD_HIGH 30.0f
-#define HUMIDITY_THRESHOLD_HIGH    70.0f // Not used in current logic, but kept for potential future use
-#define TEMPERATURE_THRESHOLD_LOW  27.0f
+#define TEMPERATURE_THRESHOLD_HIGH 33.0f
+#define HUMIDITY_THRESHOLD_HIGH    80.0f // Not used in current logic, but kept for potential future use
+#define TEMPERATURE_THRESHOLD_LOW  29.0f
 
 #define READ_INTERVAL_SECONDS 5 // Sensor reading and control interval (seconds)
 
@@ -67,12 +67,16 @@ void handle_exit_signals(int signum) {
 
 // Callback function to receive DHT sensor data
 void dht_sensor_callback(DHTXXD_data_t data) {
-    if (data.status == PI_DHT_GOOD) {
+    if (data.status == DHT_GOOD) {
         current_temperature = data.temperature;
         current_humidity = data.humidity;
         sensor_data_ready = 1; // Set flag that new data is available
         // printf("Callback: Temp=%.1fC, Hum=%.1f%%\n", data.temperature, data.humidity); // Optional: for debugging callback
-    } else {
+    } else if (data.status == DHT_BAD_DATA) {
+        printf("Callback: Sensor data unchanged (status %d).\n", data.status);
+        sensor_data_ready = 0;
+    }
+    else {
         fprintf(stderr, "Callback: Failed to read DHT sensor. Error code: %d\n", data.status);
         // Optionally, set sensor_data_ready = 0 or handle error appropriately
         sensor_data_ready = 0; // Indicate data is not good
@@ -94,10 +98,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     printf("Connected to pigpiod daemon (handle: %d).\n", pi_handle);
-
+    
+    int result_set_mode = set_mode(pi_handle, RELAY_PIN, PI_OUTPUT);
     // 2. Set relay GPIO pin to output mode and initial state to OFF
-    if (set_mode(pi_handle, RELAY_PIN, PI_OUTPUT) != 0) {
-        fprintf(stderr, "Failed to set GPIO %d mode to OUTPUT. Error: %s\n", RELAY_PIN, pigpio_error(pigpio_last_error(pi_handle)));
+    if (result_set_mode != 0) {
+        //fprintf(stderr, "Failed to set GPIO %d mode to OUTPUT. Error: %s\n", RELAY_PIN, pigpio_error(pigpio_last_error(pi_handle)));
+        fprintf(stderr, "Failed to set GPIO %d mode to OUTPUT. Error: %s (code: %d)\n", RELAY_PIN, pigpio_error(result_set_mode), result_set_mode);
         cleanup_gpio_and_sensor();
         return 1;
     }

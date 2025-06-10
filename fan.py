@@ -2,9 +2,9 @@ import RPi.GPIO as GPIO
 import time
 
 # --- 설정 값 ---
-RELAY_PIN = 26        # 릴레이 제어에 사용할 GPIO 핀 번호 (BCM 모드 기준)
-ON_TIME_SECONDS = 3    # 릴레이가 켜져 있는 시간 (초)
-OFF_TIME_SECONDS = 3   # 릴레이가 꺼져 있는 시간 (초)
+RELAY_PIN = 24        # 릴레이 제어에 사용할 GPIO 핀 번호 (BCM 모드 기준)
+ON_TIME_SECONDS = 5    # 릴레이가 켜져 있는 시간 (초)
+OFF_TIME_SECONDS = 10   # 릴레이가 꺼져 있는 시간 (초)
 
 # 릴레이 트리거 방식 설정 (True: High Level Trigger, False: Low Level Trigger)
 IS_HIGH_LEVEL_TRIGGER = True 
