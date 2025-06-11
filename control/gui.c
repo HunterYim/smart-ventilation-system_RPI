@@ -10,7 +10,7 @@ static void on_manual_on_clicked(GtkButton *button, gpointer user_data) {
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = TRUE;
         ventilation_on(); // 팬 켜기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "환기 중 (수동)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan on (manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
@@ -21,7 +21,7 @@ static void on_manual_off_clicked(GtkButton *button, gpointer user_data) {
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = FALSE;
         ventilation_off(); // 팬 끄기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "대기 중 (수동)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan off (manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
@@ -37,7 +37,7 @@ static void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer use
             g_shared_data->is_running = FALSE;
             ventilation_off();
         }
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "대기 중 (수동)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan off (manual)");
     } else { // FALSE: 자동 모드
         g_shared_data->mode = AUTOMATIC;
         gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_on, FALSE);
@@ -52,7 +52,7 @@ void create_gui(GtkApplication *app, gpointer user_data) {
     GuiWidgets *widgets = g_shared_data->widgets;
 
     widgets->window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(widgets->window), "스마트 환기 시스템");
+    gtk_window_set_title(GTK_WINDOW(widgets->window), "Smart Ventilation System");
     gtk_window_set_default_size(GTK_WINDOW(widgets->window), 480, 320);
     gtk_container_set_border_width(GTK_CONTAINER(widgets->window), 20);
 
@@ -61,21 +61,21 @@ void create_gui(GtkApplication *app, gpointer user_data) {
     gtk_grid_set_column_spacing(GTK_GRID(grid), 15);
     gtk_container_add(GTK_CONTAINER(widgets->window), grid);
 
-    GtkWidget *lbl_title = gtk_label_new("스마트 환기 시스템");
+    GtkWidget *lbl_title = gtk_label_new("Smart Ventilation System");
     PangoAttribute *attr = pango_attr_size_new(20 * PANGO_SCALE);
     PangoAttrList *attrs = pango_attr_list_new();
     pango_attr_list_insert(attrs, attr);
     gtk_label_set_attributes(GTK_LABEL(lbl_title), attrs);
     pango_attr_list_unref(attrs);
 
-    widgets->lbl_temp = gtk_label_new("온도: --.- °C");
-    widgets->lbl_humidity = gtk_label_new("습도: --.- %");
-    widgets->lbl_status = gtk_label_new("상태: 초기화 중...");
+    widgets->lbl_temp = gtk_label_new("temperature: --.- °C");
+    widgets->lbl_humidity = gtk_label_new("humidity: --.- %");
+    widgets->lbl_status = gtk_label_new("status: reseting...");
     widgets->switch_mode = gtk_switch_new();
-    GtkWidget *lbl_mode_auto = gtk_label_new("자동");
-    GtkWidget *lbl_mode_manual = gtk_label_new("수동");
-    widgets->btn_manual_on = gtk_button_new_with_label("수동 환기 시작");
-    widgets->btn_manual_off = gtk_button_new_with_label("수동 환기 정지");
+    GtkWidget *lbl_mode_auto = gtk_label_new("auto");
+    GtkWidget *lbl_mode_manual = gtk_label_new("manual");
+    widgets->btn_manual_on = gtk_button_new_with_label("manual ventilation start");
+    widgets->btn_manual_off = gtk_button_new_with_label("manual ventilation stop");
 
     gtk_grid_attach(GTK_GRID(grid), lbl_title, 0, 0, 4, 1);
     gtk_grid_attach(GTK_GRID(grid), widgets->lbl_temp, 0, 1, 2, 1);
