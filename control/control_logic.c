@@ -1,4 +1,4 @@
-#include "control_logic.hh"
+#include "control_logic.h"
 #include "gui.h"
 #include "dht11_driver.h"
 #include "motor_driver.h"
