@@ -16,7 +16,8 @@ SRCS = $(SRC_DIR)/main.c \
        $(SRC_DIR)/control_logic.c \
        $(SRC_DIR)/dht11_driver.c \
        $(SRC_DIR)/motor_driver.c \
-       $(SRC_DIR)/DHTXXD.c
+       $(SRC_DIR)/DHTXXD.c \
+       $(SRC_DIR)/lcd_driver.c
 
 # 오브젝트 파일 목록 (빌드 디렉토리에 생성되도록 설정)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
