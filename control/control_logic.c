@@ -21,9 +21,13 @@
 static gboolean update_gui_callback(gpointer user_data) {
     SharedData *data = (SharedData*)user_data;
 
+    // data나 widgets, 또는 특정 위젯이 아직 준비되지 않았다면 아무것도 하지 않고 종료
+    if (!data || !data->widgets || !data->widgets->lbl_temp) {
+        return G_SOURCE_REMOVE;
+    }
+
     g_mutex_lock(&data->mutex);
     char temp_str[32], hum_str[32];
-    // GUI 라벨 텍스트 수정
     sprintf(temp_str, "Temperature: %.1f C", data->temperature);
     sprintf(hum_str, "Humidity: %.1f %%", data->humidity);
 
