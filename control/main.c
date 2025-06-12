@@ -6,6 +6,7 @@
 #include "control_logic.h"
 #include "dht11_driver.h"
 #include "motor_driver.h"
+#include "buzzer_driver.h"
 
 // 프로그램 종료 시 리소스 정리를 위해 필요한 전역 포인터
 static SharedData *g_main_shared_data_for_cleanup = NULL;
@@ -57,7 +58,16 @@ int main(int argc, char *argv[]) {
     if (setup_gpio() != 0) {
         cleanup_pigpio();
         return 1;
+    }// --- 여기에 버저 초기화 호출을 추가합니다 ---
+    if (buzzer_init() != 0) {
+        cleanup_pigpio();
+        return 1;
     }
+    if (buzzer_init() != 0) {
+        cleanup_pigpio();
+        return 1;
+    }
+
     printf("[Main] Hardware initialized successfully.\n");
 
     // 3. GTK 애플리케이션 생성

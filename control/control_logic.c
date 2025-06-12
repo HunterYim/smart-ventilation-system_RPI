@@ -3,6 +3,7 @@
 #include "dht11_driver.h"
 #include "motor_driver.h"
 #include "lcd_driver.h"
+#include "buzzer_driver.h"
 #include <unistd.h>
 #include <stdio.h>
 
@@ -10,7 +11,12 @@
 // #define TEMPERATURE_THRESHOLD_LOW  29.0f
 #define TEMPERATURE_THRESHOLD 27.0f
 #define HUMIDITY_THRESHOLD    70.0f
-#define READ_INTERVAL_SECONDS 5
+
+// LCD 및 버저 경고 임계값
+#define WARNING_TEMP_THRESHOLD 30.0f
+#define WARNING_HUMI_THRESHOLD 80.0f
+
+#define READ_INTERVAL_SECONDS 3
 
 // GUI 업데이트를 수행할 콜백 (메인 GTK 스레드에서 안전하게 실행됨)
 static gboolean update_gui_callback(gpointer user_data) {
@@ -38,36 +44,44 @@ void* worker_thread_func(void* user_data) {
 
     while (1) {
         dht11_trigger_read();
-        sleep(1); // 콜백이 데이터를 처리할 시간
+        sleep(1); 
 
         g_mutex_lock(&data->mutex);
         if (data->new_data_available) {
             
-            // --- 여기에 LCD 출력 함수 호출을 추가합니다 ---
+            // 1. Text LCD 업데이트 (기존 로직)
             lcd_display_update(data->temperature, data->humidity);
-            // ------------------------------------------
 
+            // --- 2. 버저 제어 로직 추가 ---
+            // LCD 경고 조건과 동일
+            if (data->temperature >= WARNING_TEMP_THRESHOLD || data->humidity >= WARNING_HUMI_THRESHOLD) {
+                buzzer_on();
+            } else {
+                buzzer_off();
+            }
+            // -----------------------------
+
+            // 3. 자동 팬 제어 (기존 로직)
             if (data->mode == AUTOMATIC) {
-                // ... (기존의 팬 제어 로직은 그대로 둠) ...
-                if (data->is_running) {
-                    if (data->temperature < TEMPERATURE_THRESHOLD_LOW) {
-                        data->is_running = FALSE;
-                        ventilation_off();
-                    }
-                } else {
-                    if (data->temperature > TEMPERATURE_THRESHOLD_HIGH) {
+                if (data->temperature > TEMPERATURE_THRESHOLD || data->humidity > HUMIDITY_THRESHOLD) {
+                    if (!data->is_running) {
                         data->is_running = TRUE;
                         ventilation_on();
                     }
+                } else {
+                    if (data->is_running) {
+                        data->is_running = FALSE;
+                        ventilation_off();
+                    }
                 }
             }
-            data->new_data_available = FALSE; // 플래그 리셋
+            data->new_data_available = FALSE;
         }
         g_mutex_unlock(&data->mutex);
 
-        g_idle_add(update_gui_callback, data); // GUI 업데이트 요청
+        g_idle_add(update_gui_callback, data);
 
-        sleep(READ_INTERVAL_SECONDS - 1); // 다음 주기까지 대기
+        sleep(READ_INTERVAL_SECONDS - 1);
     }
     return NULL;
 }
