@@ -23,6 +23,7 @@ typedef struct {
     float humidity;
     SystemMode mode;
     gboolean is_running;          // 팬 작동 여부
+    gboolean is_alert_active;     // 경고 활성화 상태
     gboolean new_data_available;  // 새 센서 데이터 수신 플래그
     GuiWidgets *widgets;          // GUI 위젯 포인터
     GMutex mutex;                 // 데이터 보호를 위한 뮤텍스

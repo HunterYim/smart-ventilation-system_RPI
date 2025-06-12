@@ -55,14 +55,12 @@ int main(int argc, char *argv[]) {
     printf("[Main] Initializing hardware...\n");
     // 2. 하드웨어 초기화 (pigpio 연결 및 GPIO 설정)
     if (init_pigpio() < 0) return 1;
+
     if (setup_gpio() != 0) {
         cleanup_pigpio();
         return 1;
-    }// --- 여기에 버저 초기화 호출을 추가합니다 ---
-    if (buzzer_init() != 0) {
-        cleanup_pigpio();
-        return 1;
     }
+
     if (buzzer_init() != 0) {
         cleanup_pigpio();
         return 1;
@@ -83,6 +81,7 @@ int main(int argc, char *argv[]) {
     shared_data.humidity = 0.0f;
     shared_data.mode = AUTOMATIC;
     shared_data.is_running = FALSE;
+    shared_data.is_alert_active = FALSE;
     shared_data.new_data_available = FALSE;
     shared_data.widgets = &widgets;
     g_mutex_init(&shared_data.mutex);
