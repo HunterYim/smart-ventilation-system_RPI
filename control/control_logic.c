@@ -56,7 +56,7 @@ void* worker_thread_func(void* user_data) {
     char command_buf[64];
 
     // 스레드 시작 시 FIFO 생성
-    mkfifo(FIFO_PATH, 0666);
+    mkfifo(FIFO_PATH, 0777);
 
     while (1) {
         // 1. 원격 제어 명령 확인
