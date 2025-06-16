@@ -11,6 +11,10 @@ static SharedData *g_shared_data_for_callback = NULL;
 
 // 센서 데이터 수신 콜백 함수
 void dht_sensor_callback(DHTXXD_data_t data) {
+    // 콜백이 호출될 때마다 센서 상태를 출력
+    // DHT_GOOD=0, DHT_BAD_CHECKSUM=1, DHT_BAD_DATA=2, DHT_TIMEOUT=3
+    printf("[Debug Sensor] Callback received! status = %d\n", data.status);
+
     if (g_shared_data_for_callback && (data.status == DHT_GOOD || data.status == DHT_BAD_DATA)) {
         g_mutex_lock(&g_shared_data_for_callback->mutex);
         g_shared_data_for_callback->temperature = data.temperature;
