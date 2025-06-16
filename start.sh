@@ -24,9 +24,11 @@ echo "pigpio daemon started successfully."
 # --- 2. Load FPGA Kernel Modules ---
 MODULE_PATH="./drivers" 
 echo "[2/4] Loading FPGA kernel modules..."
-insmod ${MODULE_PATH}/fpga_interface_driver.ko
-insmod ${MODULE_PATH}/fpga_buzzer_driver.ko
-insmod ${MODULE_PATH}/fpga_text_lcd_driver.ko
+sudo insmod ${MODULE_PATH}/fpga_interface_driver.ko
+sudo insmod ${MODULE_PATH}/fpga_buzzer_driver.ko
+sudo mknod /dev/fpga_buzzer.c 264 0
+sudo insmod ${MODULE_PATH}/fpga_text_lcd_driver.ko
+sudo mknod /dev/fpga_text_lcd.c 263 0
 # Verify that the modules are loaded
 echo "Verifying loaded modules:"
 lsmod | grep "fpga"
