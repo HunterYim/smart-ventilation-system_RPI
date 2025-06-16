@@ -46,6 +46,6 @@ echo "Compilation successful."
 
 # --- 4. Run the Compiled Application ---
 echo "[4/4] Running the Smart Ventilation System GUI application..."
-sodo ./smart_ventilation
+sudo ./smart_ventilation
 
 echo "--- Script finished ---"
