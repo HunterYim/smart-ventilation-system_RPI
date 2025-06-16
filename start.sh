@@ -35,20 +35,17 @@ echo "Kernel module loading process finished."
 
 # --- 3. Compile the C Application ---
 echo "[3/4] Compiling the C application..."
-cd control
 make clean
 make
 if [ $? -ne 0 ]; then
     echo "Error: Compilation failed."
-    cd ..
     exit 1
 fi
 echo "Compilation successful."
-cd ..
 
 
 # --- 4. Run the Compiled Application ---
 echo "[4/4] Running the Smart Ventilation System GUI application..."
-./control/smart_ventilation
+./smart_ventilation
 
 echo "--- Script finished ---"
