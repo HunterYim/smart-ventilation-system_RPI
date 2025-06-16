@@ -52,6 +52,9 @@ void* worker_thread_func(void* user_data) {
 
         g_mutex_lock(&data->mutex);
         if (data->new_data_available) {
+            // 새로 수신된 온습도 데이터를 터미널에 출력합니다.
+            printf("[Debug Logic] New data processed -> Temp: %.1f C, Humi: %.1f %%\n", 
+                   data->temperature, data->humidity);
             
             // 1. Text LCD 업데이트
             lcd_display_update(data->temperature, data->humidity);
