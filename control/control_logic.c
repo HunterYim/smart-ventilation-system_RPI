@@ -129,7 +129,6 @@ void* worker_thread_func(void* user_data) {
                 }
                 g_mutex_unlock(&data->mutex);
             }
-            close(fifo_fd);
         }
 
         // // 원격 제어 명령 확인
@@ -222,5 +221,6 @@ void* worker_thread_func(void* user_data) {
         // 여기서의 sleep 시간은 버저 작동 시간에 영향을 받지 않음
         sleep(READ_INTERVAL_SECONDS - 1);
     }
+    close(fifo_fd);
     return NULL;
 }
