@@ -115,7 +115,6 @@ void* worker_thread_func(void* user_data) {
 
         g_mutex_lock(&data->mutex);
         if (data->new_data_available) {
-            
             // 디버그 메시지
             printf("[Debug Logic] New data processed -> Temp: %.1f C, Humi: %.1f %%\n", 
                    data->temperature, data->humidity);
@@ -124,18 +123,15 @@ void* worker_thread_func(void* user_data) {
             lcd_display_update(data->temperature, data->humidity);
             write_status_to_file(data);
 
-            // 2. 수정된 버저 제어 로직
-            
+            // 2. 버저 제어 로직
             // 현재 센서 값 기준으로 경고 상태인지 판단
-            bool is_warning_condition = (data->temperature >= WARNING_TEMP_THRESHOLD || data->humidity >= WARNING_HUMI_THRESHOLD);
+            bool current_warning_state = (data->temperature >= WARNING_TEMP_THRESHOLD || data->humidity >= WARNING_HUMI_THRESHOLD);
 
-            // [핵심 로직] 경고 조건이 발생했고, 이전에는 경고 상태가 아니었을 때 (즉, 딱 한 번만 실행됨)
-            if (is_warning_condition && !data->is_alert_active) {
+            // 상태가 OFF에서 ON으로 바뀌는 '순간'을 감지
+            // 현재는 경고 상태이지만, 직전까지는 경고 상태가 아니었을 때
+            if (current_warning_state && !data->is_alert_active) {
                 
-                // 1. 경고 상태를 '활성'으로 변경하여 중복 실행 방지
-                data->is_alert_active = TRUE;
-                
-                // 2. 뮤텍스를 잠시 풀고 버저를 제어 (sleep이 뮤텍스를 오래 잡고 있는 것을 방지)
+                // 뮤텍스를 잠시 풀고 버저를 제어
                 g_mutex_unlock(&data->mutex);
                 
                 printf("[Alert] Warning condition met. Sounding buzzer for 5 seconds...\n");
@@ -144,20 +140,19 @@ void* worker_thread_func(void* user_data) {
                 buzzer_off();
                 printf("[Alert] Buzzer stopped.\n");
 
-                // 3. 다시 뮤텍스를 잠그고 루프를 계속 진행
+                // 다시 뮤텍스를 잠그고 루프를 계속 진행
                 g_mutex_lock(&data->mutex);
-
-            } 
-            // 경고 조건이 해제되었을 때 (온/습도가 정상으로 돌아왔을 때)
-            else if (!is_warning_condition && data->is_alert_active) {
-                // 경고 상태를 '비활성'으로 리셋하여 다음 경고를 준비
-                data->is_alert_active = FALSE; 
-                printf("[Alert] Warning condition cleared. System reset.\n");
             }
 
-            // 3. 자동 팬 제어
+            // 다음 루프를 위해 현재 상태를 저장
+            data->is_alert_active = current_warning_state;
+
+
+            // 자동 팬 제어 (기존 로직)
             if (data->mode == AUTOMATIC) {
-                if (data->temperature > TEMPERATURE_THRESHOLD || data->humidity > HUMIDITY_THRESHOLD) {
+                // 팬 제어 로직은 경고 조건과 별개로 작동합니다.
+                bool fan_on_condition = (data->temperature > TEMPERATURE_THRESHOLD || data->humidity > HUMIDITY_THRESHOLD);
+                if (fan_on_condition) {
                     if (!data->is_running) {
                         data->is_running = TRUE;
                         ventilation_on();

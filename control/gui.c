@@ -10,7 +10,7 @@ static void on_manual_on_clicked(GtkButton *button, gpointer user_data) {
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = TRUE;
         ventilation_on(); // 팬 켜기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan on (manual)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan on (manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
@@ -21,7 +21,7 @@ static void on_manual_off_clicked(GtkButton *button, gpointer user_data) {
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = FALSE;
         ventilation_off(); // 팬 끄기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan off (manual)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan off (manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
@@ -37,7 +37,7 @@ static void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer use
             g_shared_data->is_running = FALSE;
             ventilation_off();
         }
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "fan off (manual)");
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan off (manual)");
     } else { // FALSE: 자동 모드
         g_shared_data->mode = AUTOMATIC;
         gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_on, FALSE);
