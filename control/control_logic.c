@@ -66,9 +66,9 @@ static gboolean update_gui_callback(gpointer user_data) {
     } else {
         gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status),
             data->is_running ? "Fan ON (Manual)" : "Fan OFF (Manual)");
+    }
     g_mutex_unlock(&data->mutex);
     return G_SOURCE_REMOVE;
-    }
 }
 
 // 백그라운드 워커 스레드
