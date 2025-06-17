@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/select.h>
 
 #define FIFO_PATH "/tmp/smart_vent_fifo" // Flask와 통신할 파이프 경로
 #define STATUS_FILE_PATH "/tmp/smart_vent_status.json" // 웹 통신용 상태 파일
@@ -78,19 +79,35 @@ void* worker_thread_func(void* user_data) {
     char command_buf[64];
 
     // FIFO 파이프 생성 (모든 사용자가 쓸 수 있도록 0777 권한)
-    if (mkfifo(FIFO_PATH, 0777) == -1) {
-        if (errno != EEXIST) {
-            perror("[Error] mkfifo failed");
-        }
+    if (mkfifo(FIFO_PATH, 0777) == -1 && errno != EEXIST) {
+        perror("[Error] mkfifo failed");
     }
     if (chmod(FIFO_PATH, 0777) == -1) {
         perror("[Error] chmod for FIFO failed");
     }
 
+    printf("[Logic] Opening FIFO for reading. Waiting for writer...\n");
+    fifo_fd = open(FIFO_PATH, O_RDONLY | O_NONBLOCK);
+    if (fifo_fd == -1) {
+        perror("[Error] Failed to open FIFO permanently");
+        return NULL; // 스레드 종료
+    }
+    printf("[Logic] FIFO opened successfully.\n");
+
     while (1) {
-        // 원격 제어 명령 확인
-        fifo_fd = open(FIFO_PATH, O_RDONLY | O_NONBLOCK);
-        if (fifo_fd != -1) {
+        fd_set fds;
+        struct timeval tv;
+        int ret;
+
+        FD_ZERO(&fds);
+        FD_SET(fifo_fd, &fds);
+        
+        tv.tv_sec = 0;
+        tv.tv_usec = 10000; // 0.01초만 기다림
+
+        ret = select(fifo_fd + 1, &fds, NULL, NULL, &tv);
+        
+        if (ret > 0 && FD_ISSET(fifo_fd, &fds)) {
             int bytes_read = read(fifo_fd, command_buf, sizeof(command_buf) - 1);
             if (bytes_read > 0) {
                 command_buf[bytes_read] = '\0';
@@ -114,6 +131,33 @@ void* worker_thread_func(void* user_data) {
             }
             close(fifo_fd);
         }
+
+        // // 원격 제어 명령 확인
+        // fifo_fd = open(FIFO_PATH, O_RDONLY | O_NONBLOCK);
+        // if (fifo_fd != -1) {
+        //     int bytes_read = read(fifo_fd, command_buf, sizeof(command_buf) - 1);
+        //     if (bytes_read > 0) {
+        //         command_buf[bytes_read] = '\0';
+        //         printf("[Remote] Command received: %s\n", command_buf);
+        //         g_mutex_lock(&data->mutex);
+        //         if (strncmp(command_buf, "REMOTE_ON", 9) == 0) {
+        //             data->mode = MANUAL;
+        //             data->is_running = TRUE;
+        //             ventilation_on();
+        //             gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
+        //         } else if (strncmp(command_buf, "REMOTE_OFF", 10) == 0) {
+        //             data->mode = MANUAL;
+        //             data->is_running = FALSE;
+        //             ventilation_off();
+        //             gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
+        //         } else if (strncmp(command_buf, "REMOTE_AUTO", 11) == 0) {
+        //             data->mode = AUTOMATIC;
+        //             gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), FALSE);
+        //         }
+        //         g_mutex_unlock(&data->mutex);
+        //     }
+        //     close(fifo_fd);
+        // }
 
         dht11_trigger_read();
         sleep(1); 
