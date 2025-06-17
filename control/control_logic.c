@@ -7,6 +7,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#define FIFO_PATH "/tmp/smart_vent_fifo" // Flask와 통신할 파이프 경로
+#define STATUS_FILE_PATH "/tmp/smart_vent_status.json" // 웹 통신용 상태 파일
 
 // 새롭게 정의된 임계값
 #define TEMPERATURE_THRESHOLD 27.0f
@@ -17,6 +24,24 @@
 #define WARNING_HUMI_THRESHOLD 70.0f
 
 #define READ_INTERVAL_SECONDS 3
+
+// 현재 상태를 JSON 파일로 쓰는 함수
+static void write_status_to_file(SharedData *data) {
+    FILE *fp = fopen(STATUS_FILE_PATH, "w");
+    if (fp == NULL) {
+        perror("[Error] Failed to open status file");
+        return;
+    }
+    // "auto" 또는 "manual" 문자열 결정
+    const char* mode_str = (data->mode == AUTOMATIC) ? "auto" : "manual";
+    // JSON 형식으로 파일에 씀
+    fprintf(fp, "{\"temperature\": %.1f, \"humidity\": %.1f, \"fan_on\": %s, \"mode\": \"%s\"}",
+            data->temperature,
+            data->humidity,
+            data->is_running ? "true" : "false",
+            mode_str);
+    fclose(fp);
+}
 
 // GUI 업데이트를 수행할 콜백 (메인 GTK 스레드에서 안전하게 실행됨)
 static gboolean update_gui_callback(gpointer user_data) {
@@ -38,16 +63,53 @@ static gboolean update_gui_callback(gpointer user_data) {
     if (data->mode == AUTOMATIC) {
         gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status),
             data->is_running ? "Fan ON (Auto)" : "Fan OFF (Auto)");
-    }
+    } else {
+        gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status),
+            data->is_running ? "Fan ON (Manual)" : "Fan OFF (Manual)");
     g_mutex_unlock(&data->mutex);
     return G_SOURCE_REMOVE;
+    }
 }
 
 // 백그라운드 워커 스레드
 void* worker_thread_func(void* user_data) {
     SharedData *data = (SharedData*)user_data;
+    int fifo_fd;
+    char command_buf[64];
+
+    // FIFO 파이프 생성 (모든 사용자가 쓸 수 있도록 0777 권한)
+    if (mkfifo(FIFO_PATH, 0777) == -1 && errno != EEXIST) {
+        perror("[Error] mkfifo failed");
+    }
 
     while (1) {
+        // 원격 제어 명령 확인
+        fifo_fd = open(FIFO_PATH, O_RDONLY | O_NONBLOCK);
+        if (fifo_fd != -1) {
+            int bytes_read = read(fifo_fd, command_buf, sizeof(command_buf) - 1);
+            if (bytes_read > 0) {
+                command_buf[bytes_read] = '\0';
+                printf("[Remote] Command received: %s\n", command_buf);
+                g_mutex_lock(&data->mutex);
+                if (strncmp(command_buf, "REMOTE_ON", 9) == 0) {
+                    data->mode = MANUAL;
+                    data->is_running = TRUE;
+                    ventilation_on();
+                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
+                } else if (strncmp(command_buf, "REMOTE_OFF", 10) == 0) {
+                    data->mode = MANUAL;
+                    data->is_running = FALSE;
+                    ventilation_off();
+                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
+                } else if (strncmp(command_buf, "REMOTE_AUTO", 11) == 0) {
+                    data->mode = AUTOMATIC;
+                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), FALSE);
+                }
+                g_mutex_unlock(&data->mutex);
+            }
+            close(fifo_fd);
+        }
+
         dht11_trigger_read();
         sleep(1); 
 
@@ -60,6 +122,7 @@ void* worker_thread_func(void* user_data) {
             
             // 1. Text LCD 업데이트
             lcd_display_update(data->temperature, data->humidity);
+            write_status_to_file(data);
 
             // 2. 수정된 버저 제어 로직
             
