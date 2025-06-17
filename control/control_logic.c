@@ -78,8 +78,13 @@ void* worker_thread_func(void* user_data) {
     char command_buf[64];
 
     // FIFO 파이프 생성 (모든 사용자가 쓸 수 있도록 0777 권한)
-    if (mkfifo(FIFO_PATH, 0777) == -1 && errno != EEXIST) {
-        perror("[Error] mkfifo failed");
+    if (mkfifo(FIFO_PATH, 0777) == -1) {
+        if (errno != EEXIST) {
+            perror("[Error] mkfifo failed");
+        }
+    }
+    if (chmod(FIFO_PATH, 0777) == -1) {
+        perror("[Error] chmod for FIFO failed");
     }
 
     while (1) {
