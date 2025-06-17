@@ -1,5 +1,6 @@
 import os
 import json
+import traceback
 from flask import Flask, render_template_string, jsonify
 
 FIFO_PATH = "/tmp/smart_vent_fifo"
@@ -86,12 +87,25 @@ HTML_TEMPLATE = """
 """
 
 def write_to_fifo(command):
+    print(f"[Flask Debug] Attempting to write '{command}' to FIFO...")
     try:
-        fd = os.open(FIFO_PATH, os.O_WRONLY)
+        # FIFO가 존재하는지 먼저 확인
+        if not os.path.exists(FIFO_PATH):
+            print(f"[Flask Error] FIFO path '{FIFO_PATH}' does not exist!")
+            return f"Error: FIFO path does not exist.", 500
+        
+        # O_NONBLOCK을 추가하여 쓰기가 즉시 실패하는지 확인
+        fd = os.open(FIFO_PATH, os.O_WRONLY | os.O_NONBLOCK)
         os.write(fd, command.encode())
         os.close(fd)
+        print(f"[Flask Debug] Command '{command}' sent successfully.")
         return "OK"
     except Exception as e:
+        # 어떤 종류의 에러가 발생했는지, 상세한 내용을 터미널에 출력
+        print(f"[Flask Error] Failed to write to FIFO.")
+        print(f"[Flask Error] Exception Type: {type(e).__name__}")
+        print(f"[Flask Error] Exception Details: {e}")
+        traceback.print_exc() # 전체 에러 스택을 출력
         return f"Error: {e}", 500
 
 # C가 만든 상태 파일을 읽어서 JSON으로 반환하는 API
