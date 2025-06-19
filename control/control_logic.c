@@ -17,11 +17,11 @@
 #define STATUS_FILE_PATH "/tmp/smart_vent_status.json" // 웹 통신용 상태 파일
 
 // 새롭게 정의된 임계값
-#define TEMPERATURE_THRESHOLD 27.0f
+#define TEMPERATURE_THRESHOLD 28.0f
 #define HUMIDITY_THRESHOLD    70.0f
 
 // LCD 및 버저 경고 임계값
-#define WARNING_TEMP_THRESHOLD 27.0f
+#define WARNING_TEMP_THRESHOLD 28.0f
 #define WARNING_HUMI_THRESHOLD 70.0f
 
 #define READ_INTERVAL_SECONDS 3
@@ -210,8 +210,7 @@ void* worker_thread_func(void* user_data) {
 
             // 자동 팬 제어 (기존 로직)
             if (data->mode == AUTOMATIC) {
-                // 팬 제어 로직은 경고 조건과 별개로 작동합니다.
-                bool fan_on_condition = (data->temperature > TEMPERATURE_THRESHOLD || data->humidity > HUMIDITY_THRESHOLD);
+                bool fan_on_condition = (data->temperature >= TEMPERATURE_THRESHOLD || data->humidity >= HUMIDITY_THRESHOLD);
                 if (fan_on_condition) {
                     if (!data->is_running) {
                         data->is_running = TRUE;
