@@ -1,7 +1,6 @@
 #include "gui.h"
-#include "motor_driver.h" // 수동 제어를 위해 포함
+#include "motor_driver.h"
 
-// GUI 콜백 함수에서 공유 데이터에 접근하기 위한 전역 포인터
 static SharedData *g_shared_data = NULL;
 
 // "수동 환기 시작" 버튼 콜백
@@ -9,8 +8,8 @@ static void on_manual_on_clicked(GtkButton *button, gpointer user_data) {
     g_mutex_lock(&g_shared_data->mutex);
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = TRUE;
-        ventilation_on(); // 팬 켜기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan on (manual)");
+        ventilation_on();
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan ON (Manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
@@ -20,36 +19,40 @@ static void on_manual_off_clicked(GtkButton *button, gpointer user_data) {
     g_mutex_lock(&g_shared_data->mutex);
     if (g_shared_data->mode == MANUAL) {
         g_shared_data->is_running = FALSE;
-        ventilation_off(); // 팬 끄기
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan OFF (manual)");
+        ventilation_off();
+        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan OFF (Manual)");
     }
     g_mutex_unlock(&g_shared_data->mutex);
 }
 
 // "자동/수동" 스위치 콜백
 static void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer user_data) {
-    g_mutex_lock(&g_shared_data->mutex);
+    SharedData *data = (SharedData*)user_data;
+
+    g_mutex_lock(&data->mutex);
     if (state) { // TRUE: 수동 모드
-        g_shared_data->mode = MANUAL;
-        gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_on, TRUE);
-        gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_off, TRUE);
-        if (g_shared_data->is_running) { // 자동 모드에서 켜져 있었다면 끔
-            g_shared_data->is_running = FALSE;
+        data->mode = MANUAL;
+        gtk_widget_set_sensitive(data->widgets->btn_manual_on, TRUE);
+        gtk_widget_set_sensitive(data->widgets->btn_manual_off, TRUE);
+        if (data->is_running) {
+            data->is_running = FALSE;
             ventilation_off();
         }
-        gtk_label_set_text(GTK_LABEL(g_shared_data->widgets->lbl_status), "Fan OFF (manual)");
+        gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status), "Fan OFF (Manual)");
     } else { // FALSE: 자동 모드
-        g_shared_data->mode = AUTOMATIC;
-        gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_on, FALSE);
-        gtk_widget_set_sensitive(g_shared_data->widgets->btn_manual_off, FALSE);
+        data->mode = AUTOMATIC;
+        gtk_widget_set_sensitive(data->widgets->btn_manual_on, FALSE);
+        gtk_widget_set_sensitive(data->widgets->btn_manual_off, FALSE);
     }
-    g_mutex_unlock(&g_shared_data->mutex);
+    g_mutex_unlock(&data->mutex);
 }
 
 // GUI를 생성하고 표시하는 메인 함수
 void create_gui(GtkApplication *app, gpointer user_data) {
+    // 전역 포인터와 지역 포인터를 모두 설정
     g_shared_data = (SharedData*)user_data;
-    GuiWidgets *widgets = g_shared_data->widgets;
+    SharedData *data = (SharedData*)user_data;
+    GuiWidgets *widgets = data->widgets;
 
     widgets->window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(widgets->window), "Smart Ventilation System");
@@ -87,9 +90,10 @@ void create_gui(GtkApplication *app, gpointer user_data) {
     gtk_grid_attach(GTK_GRID(grid), widgets->btn_manual_on, 0, 4, 2, 1);
     gtk_grid_attach(GTK_GRID(grid), widgets->btn_manual_off, 2, 4, 2, 1);
 
-    g_signal_connect(widgets->switch_mode, "state-set", G_CALLBACK(on_mode_switch_state_set), NULL);
-    g_signal_connect(widgets->btn_manual_on, "clicked", G_CALLBACK(on_manual_on_clicked), NULL);
-    g_signal_connect(widgets->btn_manual_off, "clicked", G_CALLBACK(on_manual_off_clicked), NULL);
+    // 모든 시그널 연결 시 세 번째 인자로 NULL 대신 'data' 포인터를 전달
+    g_signal_connect(widgets->switch_mode, "state-set", G_CALLBACK(on_mode_switch_state_set), data);
+    g_signal_connect(widgets->btn_manual_on, "clicked", G_CALLBACK(on_manual_on_clicked), data);
+    g_signal_connect(widgets->btn_manual_off, "clicked", G_CALLBACK(on_manual_off_clicked), data);
 
     gtk_switch_set_active(GTK_SWITCH(widgets->switch_mode), FALSE);
     gtk_widget_set_sensitive(widgets->btn_manual_on, FALSE);
