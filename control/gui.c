@@ -26,7 +26,7 @@ static void on_manual_off_clicked(GtkButton *button, gpointer user_data) {
 }
 
 // "자동/수동" 스위치 콜백
-static void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer user_data) {
+void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer user_data) {
     SharedData *data = (SharedData*)user_data;
 
     g_mutex_lock(&data->mutex);
