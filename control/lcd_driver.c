@@ -17,7 +17,7 @@ void lcd_display_update(float temp, float humi)
 
    char line1[17], line2[17], lcd_data[33] = {0};
 
-   if (temp >= 27.0 || humi >= 70.0) {
+   if (temp >= 28.0 || humi >= 70.0) {
       snprintf(line1, sizeof(line1), "FAN ON NOW!"); 
       snprintf(line2, sizeof(line2), "T:%.1fC H:%.0f%%", temp, humi);  
    } else {

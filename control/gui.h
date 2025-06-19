@@ -32,4 +32,7 @@ typedef struct {
 // GUI 생성 함수 프로토타입
 void create_gui(GtkApplication *app, gpointer user_data);
 
+// gui.c에 정의된 콜백 함수를 다른 파일에서도 알 수 있도록 공개적으로 선언
+void on_mode_switch_state_set(GtkSwitch *sw, gboolean state, gpointer user_data);
+
 #endif
