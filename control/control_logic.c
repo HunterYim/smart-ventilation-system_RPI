@@ -141,7 +141,6 @@ void* worker_thread_func(void* user_data) {
                 }
                 g_mutex_unlock(&data->mutex);
             }
-            close(fifo_fd);
         }
 
         // // 원격 제어 명령 확인
