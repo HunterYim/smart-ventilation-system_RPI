@@ -47,27 +47,41 @@ static void write_status_to_file(SharedData *data) {
 // GUI 업데이트를 수행할 콜백 (메인 GTK 스레드에서 안전하게 실행됨)
 static gboolean update_gui_callback(gpointer user_data) {
     SharedData *data = (SharedData*)user_data;
-
-    // data나 widgets, 또는 특정 위젯이 아직 준비되지 않았다면 아무것도 하지 않고 종료
     if (!data || !data->widgets || !data->widgets->lbl_temp) {
         return G_SOURCE_REMOVE;
     }
 
     g_mutex_lock(&data->mutex);
+    
+    // 1. 라벨 업데이트
     char temp_str[32], hum_str[32];
     sprintf(temp_str, "Temperature: %.1f C", data->temperature);
     sprintf(hum_str, "Humidity: %.1f %%", data->humidity);
-
     gtk_label_set_text(GTK_LABEL(data->widgets->lbl_temp), temp_str);
     gtk_label_set_text(GTK_LABEL(data->widgets->lbl_humidity), hum_str);
+
+    // 2. 상태 라벨 및 스위치 상태 업데이트
+    GtkSwitch *mode_switch = GTK_SWITCH(data->widgets->switch_mode);
+    gboolean is_manual_mode = (data->mode == MANUAL);
 
     if (data->mode == AUTOMATIC) {
         gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status),
             data->is_running ? "Fan ON (Auto)" : "Fan OFF (Auto)");
-    } else {
+    } else { // MANUAL
         gtk_label_set_text(GTK_LABEL(data->widgets->lbl_status),
             data->is_running ? "Fan ON (Manual)" : "Fan OFF (Manual)");
     }
+
+    // 3. GUI 스위치의 현재 상태와 데이터의 모드 상태가 다를 때만 업데이트
+    // 이렇게 하여 무한 시그널 루프를 방지하고, 원격 제어 상태를 GUI에 정확히 반영
+    if (gtk_switch_get_active(mode_switch) != is_manual_mode) {
+        // 콜백이 또 호출되는 것을 막기 위해 잠시 시그널 핸들러를 비활성화
+        g_signal_handlers_block_by_func(mode_switch, G_CALLBACK(on_mode_switch_state_set), data);
+        gtk_switch_set_active(mode_switch, is_manual_mode);
+        // 다시 시그널 핸들러 활성화
+        g_signal_handlers_unblock_by_func(mode_switch, G_CALLBACK(on_mode_switch_state_set), data);
+    }
+    
     g_mutex_unlock(&data->mutex);
     return G_SOURCE_REMOVE;
 }
@@ -113,22 +127,21 @@ void* worker_thread_func(void* user_data) {
                 command_buf[bytes_read] = '\0';
                 printf("[Remote] Command received: %s\n", command_buf);
                 g_mutex_lock(&data->mutex);
+                // 모든 gtk_switch_set_active 호출을 제거
                 if (strncmp(command_buf, "REMOTE_ON", 9) == 0) {
                     data->mode = MANUAL;
                     data->is_running = TRUE;
                     ventilation_on();
-                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
                 } else if (strncmp(command_buf, "REMOTE_OFF", 10) == 0) {
                     data->mode = MANUAL;
                     data->is_running = FALSE;
                     ventilation_off();
-                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), TRUE);
                 } else if (strncmp(command_buf, "REMOTE_AUTO", 11) == 0) {
                     data->mode = AUTOMATIC;
-                    gtk_switch_set_active(GTK_SWITCH(data->widgets->switch_mode), FALSE);
                 }
                 g_mutex_unlock(&data->mutex);
             }
+            close(fifo_fd);
         }
 
         // // 원격 제어 명령 확인
